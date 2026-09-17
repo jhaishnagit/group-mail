@@ -1,0 +1,358 @@
+/* ===========================
+   Excel Mail Sender — Styles
+   Matches reference screenshot
+   =========================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue-start: #4f6ef7;
+  --blue-end:   #6c4df7;
+  --blue-dark:  #3a55e0;
+  --bg:         #dde4f0;
+  --card:       #ffffff;
+  --input-bg:   #f3f5fb;
+  --border:     #e2e6f0;
+  --text:       #1a1f36;
+  --muted:      #6b7280;
+  --success:    #10b981;
+  --danger:     #ef4444;
+  --radius-lg:  18px;
+  --radius-md:  12px;
+  --radius-sm:  8px;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+/* ── Page wrapper ── */
+.page {
+  width: 100%;
+  max-width: 700px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 40px rgba(80, 100, 200, 0.13), 0 2px 8px rgba(0,0,0,0.06);
+  padding: 36px 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Title ── */
+.card-title {
+  display: flex;
+  flex-direction: column;   /* Stack logo and title vertically */
+  align-items: center;      /* Center horizontally */
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+
+.title-icon { font-size: 1.4rem; }
+.card-title h1 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+/* ── Generic field wrapper ── */
+.field { display: flex; flex-direction: column; gap: 0; }
+
+/* ── File upload row ── */
+.file-upload-row {
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* Style the native file input to look like reference */
+input[type="file"] {
+  font-size: .9rem;
+  color: var(--text);
+  width: 100%;
+  cursor: pointer;
+}
+input[type="file"]::file-selector-button {
+  background: #fff;
+  border: 1px solid #cdd3e0;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: .85rem;
+  cursor: pointer;
+  margin-right: 10px;
+  color: var(--text);
+  transition: background .15s;
+}
+input[type="file"]::file-selector-button:hover {
+  background: #f0f2fa;
+}
+
+/* ── File badge (shown after parse) ── */
+.file-badge {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: .9rem;
+}
+.file-badge-icon { font-size: 1.15rem; }
+.file-badge span:nth-child(2) {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+.pill {
+  background: var(--blue-start);
+  color: #fff;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: .95rem;
+  padding: 2px 5px;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+.clear-btn:hover { color: var(--danger); background: #fef2f2; }
+
+/* ── Toggle buttons ── */
+.toggle-row {
+  display: flex;
+  gap: 14px;
+}
+.toggle {
+  flex: 1;
+  padding: 13px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .18s, transform .12s, box-shadow .18s;
+  background: linear-gradient(135deg, var(--blue-start), var(--blue-end));
+  color: #fff;
+  box-shadow: 0 3px 14px rgba(79, 110, 247, 0.30);
+  outline: none;
+  position: relative;
+}
+/* Active toggle gets a strong dark ring exactly like the screenshot */
+.toggle.active {
+  box-shadow: 0 0 0 3px #1a1f36, 0 3px 14px rgba(79, 110, 247, 0.30);
+}
+.toggle:hover { opacity: .9; transform: translateY(-1px); }
+.toggle:active { transform: translateY(0); }
+
+/* ── Person dropdown ── */
+select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  font-size: .95rem;
+  color: var(--text);
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.6' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+  transition: border-color .2s;
+}
+select:focus {
+  outline: none;
+  border-color: var(--blue-start);
+  box-shadow: 0 0 0 3px rgba(79,110,247,.15);
+}
+
+/* ── Subject input ── */
+input[type="text"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  font-size: .95rem;
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color .2s, box-shadow .2s;
+}
+input[type="text"]::placeholder { color: #a0a8c0; }
+input[type="text"]:focus {
+  outline: none;
+  border-color: var(--blue-start);
+  box-shadow: 0 0 0 3px rgba(79,110,247,.15);
+}
+
+/* ── Message textarea ── */
+textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--input-bg);
+  font-size: .95rem;
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  min-height: 140px;
+  transition: border-color .2s, box-shadow .2s;
+  line-height: 1.55;
+}
+textarea::placeholder { color: #a0a8c0; }
+textarea:focus {
+  outline: none;
+  border-color: var(--blue-start);
+  box-shadow: 0 0 0 3px rgba(79,110,247,.15);
+}
+
+/* ── Send Mail button ── */
+.send-btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--blue-start) 0%, var(--blue-end) 100%);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 4px 18px rgba(79, 110, 247, 0.38);
+  transition: opacity .2s, transform .15s, box-shadow .2s;
+  letter-spacing: .2px;
+  margin-top: 4px;
+}
+.send-btn:hover  { opacity: .91; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(79, 110, 247, 0.44); }
+.send-btn:active { transform: translateY(0); }
+.send-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Spinner ── */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Results panel ── */
+.results {
+  border-top: 1.5px solid var(--border);
+  padding-top: 20px;
+}
+.results-title {
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+.stat-row {
+  display: flex;
+  gap: 12px;
+}
+.stat {
+  flex: 1;
+  background: #f8fafc;
+  border-radius: var(--radius-sm);
+  padding: 14px 10px;
+  text-align: center;
+}
+.stat.success { background: #f0fdf4; }
+.stat.failed  { background: #fef2f2; }
+.stat-n { font-size: 1.9rem; font-weight: 800; }
+.stat       .stat-n { color: var(--text); }
+.stat.success .stat-n { color: var(--success); }
+.stat.failed  .stat-n { color: var(--danger); }
+.stat-l { font-size: .72rem; font-weight: 600; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .5px; }
+
+/* Failed emails block */
+.failed-block {
+  margin-top: 14px;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+}
+.failed-heading { font-weight: 700; color: var(--danger); font-size: .85rem; margin-bottom: 8px; }
+.failed-block ul { list-style: none; padding: 0; }
+.failed-block li {
+  font-size: .82rem;
+  color: #b91c1c;
+  padding: 3px 0;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.failed-block li::before { content: '✕'; font-size: .7rem; padding-top: 2px; flex-shrink: 0; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: #1a1f36;
+  color: #fff;
+  padding: 11px 24px;
+  border-radius: 30px;
+  font-size: .88rem;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .28s, transform .28s;
+  z-index: 9999;
+  white-space: nowrap;
+  max-width: calc(100vw - 40px);
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: #065f46; }
+.toast.error   { background: #991b1b; }
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+  .card { padding: 24px 16px 20px; gap: 14px; }
+  .toggle-row { flex-direction: column; gap: 10px; }
+  .stat-n { font-size: 1.5rem; }
+  .card-title h1 { font-size: 1.2rem; }
+}
+
+.logoimage {
+  width: 40px;   /* Increase size */
+ 
+}

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jhaishna Technologies</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- SheetJS CDN for reading Excel files in the browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <div class="page">
+    <div class="card">
+
+      <!-- ── Title ── -->
+      <div class="card-title">
+        <span class="title-icon"><img  src="./images/logo.png" class="logoimage"/></span>
+        <h1>Jhaishna Technologies</h1>
+      </div>
+
+      <!-- ── File Upload ── -->
+      <div class="field">
+        <div class="file-upload-row" id="fileUploadRow">
+          <input type="file" id="excelFile" accept=".xlsx,.xls" />
+        </div>
+        <!-- Shown after file is parsed -->
+        <div class="file-badge" id="fileBadge" style="display:none;">
+          <span class="file-badge-icon">📊</span>
+          <span id="fileNameLabel">file.xlsx</span>
+          <span class="pill" id="countPill">0 recipients</span>
+          <button class="clear-btn" id="clearFileBtn" title="Remove">✕</button>
+        </div>
+      </div>
+
+      <!-- ── Toggle Buttons ── -->
+      <div class="toggle-row">
+        <button class="toggle active" id="btnAll" onclick="setSendMode('all')">Send to All</button>
+        <button class="toggle"        id="btnOne" onclick="setSendMode('one')">Send to One Person</button>
+      </div>
+
+      <!-- ── Person Dropdown (Send to One) ── -->
+      <div class="field" id="personField" style="display:none;">
+        <select id="personDropdown">
+          <option value="">— Upload an Excel file first —</option>
+        </select>
+      </div>
+
+      <!-- ── Subject ── -->
+      <div class="field">
+        <input type="text" id="subject" placeholder="Enter Subject" />
+      </div>
+
+      <!-- ── Body ── -->
+      <div class="field">
+        <textarea id="message" rows="7" placeholder="Enter Message&#10;&#10;Tip: use {{Name}}, {{Email}} for personalization"></textarea>
+      </div>
+
+      <!-- ── Send Button ── -->
+      <button class="send-btn" id="sendBtn" onclick="sendMails()">
+        <span class="spinner" id="spinner" style="display:none;"></span>
+        <span id="sendBtnText">Send Mail</span>
+      </button>
+
+      <!-- ── Results ── -->
+      <div class="results" id="resultsPanel" style="display:none;">
+        <div class="results-title">📬 Send Report</div>
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat-n" id="statTotal">0</div>
+            <div class="stat-l">Total</div>
+          </div>
+          <div class="stat success">
+            <div class="stat-n" id="statSuccess">0</div>
+            <div class="stat-l">Sent ✅</div>
+          </div>
+          <div class="stat failed">
+            <div class="stat-n" id="statFailed">0</div>
+            <div class="stat-l">Failed ❌</div>
+          </div>
+        </div>
+        <div id="failedBlock" style="display:none;" class="failed-block">
+          <p class="failed-heading">Failed Emails:</p>
+          <ul id="failedList"></ul>
+        </div>
+      </div>
+
+    </div><!-- /card -->
+  </div><!-- /page -->
+
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
