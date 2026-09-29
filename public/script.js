@@ -370,4 +370,3 @@ function showToast(msg, type = '') {
   toast.className   = `toast ${type} show`;
   toastTimer = setTimeout(() => { toast.className = 'toast'; }, 4500);
 }
-git remote -v
