@@ -1,7 +1,7 @@
 'use strict';
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let parsedRecipients = [];
+let parsedRecipients = [];   // ALL rows from Excel (valid + invalid) — nothing is dropped here anymore
 let sendMode = 'all';
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
@@ -29,6 +29,57 @@ excelFileInput.addEventListener('change', function () {
 });
 
 clearFileBtn.addEventListener('click', resetFile);
+
+// ── Column detection helpers ─────────────────────────────────────────────────
+// FIX: previously this picked the FIRST column whose name merely *contained*
+// "mail" or "name" anywhere (e.g. "Alternate Mail", "Domain Name",
+// "Voicemail" would all match "mail"/"name" and could be picked by mistake).
+// Now we look for exact / well-known header names first, and only fall back
+// to loose substring matching if nothing exact is found. Every candidate is
+// logged to the console so mismatches are easy to diagnose.
+
+function normalizeHeader(k) {
+  return k.trim().toLowerCase().replace(/[^a-z]/g, '');
+}
+
+function findEmailColumn(allKeys) {
+  const exactNames = ['email', 'emailaddress', 'emailid', 'email id', 'e-mail', 'mailid', 'mail'];
+  // 1) Exact (normalized) match against known email header names
+  for (const candidate of exactNames) {
+    const norm = normalizeHeader(candidate);
+    const hit = allKeys.find(k => normalizeHeader(k) === norm);
+    if (hit) return hit;
+  }
+  // 2) Fallback: loose substring match (old behaviour), but log every match
+  //    found so a wrong pick is visible instead of silent.
+  const looseMatches = allKeys.filter(k => {
+    const lower = normalizeHeader(k);
+    return lower.includes('email') || lower.includes('mail');
+  });
+  if (looseMatches.length > 1) {
+    console.warn('[Excel] Multiple possible email columns found:', looseMatches, '→ using first:', looseMatches[0]);
+  }
+  return looseMatches[0];
+}
+
+function findNameColumn(allKeys) {
+  const exactNames = ['name', 'fullname', 'full name', 'employeename', 'employee name'];
+  for (const candidate of exactNames) {
+    const norm = normalizeHeader(candidate);
+    const hit = allKeys.find(k => normalizeHeader(k) === norm);
+    if (hit) return hit;
+  }
+  const looseMatches = allKeys.filter(k => normalizeHeader(k).includes('name'));
+  if (looseMatches.length > 1) {
+    console.warn('[Excel] Multiple possible name columns found:', looseMatches, '→ using first:', looseMatches[0]);
+  }
+  return looseMatches[0];
+}
+
+// ── Email format check (used only for UI hints — server does real validation) ─
+function looksLikeEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
+}
 
 // ── handleFile ────────────────────────────────────────────────────────────────
 
@@ -70,11 +121,8 @@ function handleFile(file) {
       const allKeys = Object.keys(rows[0]);
       console.log('[Excel] Columns found:', allKeys);
 
-      const nameKey = allKeys.find(k => k.trim().toLowerCase().includes('name'));
-      const emailKey = allKeys.find(k => {
-        const lower = k.trim().toLowerCase().replace(/[^a-z]/g, '');
-        return lower.includes('email') || lower.includes('mail');
-      });
+      const nameKey  = findNameColumn(allKeys);
+      const emailKey = findEmailColumn(allKeys);
 
       console.log(`[Excel] Detected → Name column: "${nameKey}" | Email column: "${emailKey}"`);
 
@@ -91,34 +139,46 @@ function handleFile(file) {
         return;
       }
 
-      const allRecipients = rows.map((row) => {
+      // FIX: we no longer silently filter out rows with a malformed email
+      // here. Every row is kept, tagged with its validity, and sent through
+      // to the backend so it shows up properly in the final failed count.
+      const allRecipients = rows.map((row, idx) => {
         const obj = {};
         allKeys.forEach(k => { obj[k] = String(row[k] ?? '').trim(); });
-        obj['Name']  = String(row[nameKey]  ?? '').trim();
-        obj['Email'] = String(row[emailKey] ?? '').trim();
+        obj['Name']    = String(row[nameKey]  ?? '').trim();
+        obj['Email']   = String(row[emailKey] ?? '').trim();
+        obj['_row']    = idx + 2; // Excel row number (1 = header)
+        obj['_valid']  = looksLikeEmail(obj['Email']);
         return obj;
       });
 
-      parsedRecipients = allRecipients.filter((r, idx) => {
-        const valid = r.Email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.Email);
-        if (!valid) console.warn(`[Excel] Row ${idx + 2} skipped — invalid email: "${r.Email}"`);
-        return valid;
-      });
+      const invalidCount = allRecipients.filter(r => !r['_valid']).length;
+      if (invalidCount > 0) {
+        console.warn(`[Excel] ${invalidCount} row(s) have a missing/invalid email — they will still be listed in results as "Failed".`);
+      }
 
-      console.log(`[Excel] Valid recipients: ${parsedRecipients.length}`);
+      parsedRecipients = allRecipients;
 
       if (!parsedRecipients.length) {
-        showToast('❌ No valid email addresses found. Check the Email column contains real emails.', 'error');
+        showToast('❌ No rows found in the sheet.', 'error');
         return;
       }
 
-      fileNameLabel.textContent       = file.name;
-      countPill.textContent           = `${parsedRecipients.length} recipient${parsedRecipients.length !== 1 ? 's' : ''}`;
-      fileUploadRow.style.display     = 'none';
-      fileBadge.style.display         = 'flex';
+      fileNameLabel.textContent = file.name;
+      countPill.textContent = invalidCount > 0
+        ? `${parsedRecipients.length} rows (${invalidCount} invalid email)`
+        : `${parsedRecipients.length} recipient${parsedRecipients.length !== 1 ? 's' : ''}`;
+      fileUploadRow.style.display = 'none';
+      fileBadge.style.display     = 'flex';
 
       populateDropdown();
-      showToast(`✅ Loaded ${parsedRecipients.length} recipients from "${sheetName}"`, 'success');
+
+      showToast(
+        invalidCount > 0
+          ? `⚠️ Loaded ${parsedRecipients.length} rows from "${sheetName}" — ${invalidCount} have an invalid/missing email and will show as failed.`
+          : `✅ Loaded ${parsedRecipients.length} recipients from "${sheetName}"`,
+        invalidCount > 0 ? 'error' : 'success'
+      );
 
     } catch (err) {
       console.error('[Excel] Parse error:', err);
@@ -147,7 +207,8 @@ function populateDropdown() {
   parsedRecipients.forEach((r, i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `${r.Name || '(no name)'}  —  ${r.Email}`;
+    const flag = r['_valid'] ? '' : '  ⚠️ invalid email';
+    opt.textContent = `${r.Name || '(no name)'}  —  ${r.Email || '(missing)'}${flag}`;
     personDropdown.appendChild(opt);
   });
 }
@@ -200,6 +261,9 @@ async function sendMails() {
   let recipients = [];
 
   if (sendMode === 'all') {
+    // FIX: send ALL rows (including ones with an invalid email) so the
+    // backend can report every row's outcome. Previously invalid rows were
+    // filtered out here and simply vanished from the results.
     recipients = parsedRecipients.map(r => ({
       name:    r.Name,
       email:   r.Email,
@@ -242,7 +306,7 @@ async function sendMails() {
     showToast(
       data.failureCount === 0
         ? `✅ All ${data.successCount} email(s) sent successfully!`
-        : `⚠️ ${data.successCount} sent, ${data.failureCount} failed.`,
+        : `⚠️ ${data.successCount} sent, ${data.failureCount} failed (see details below).`,
       data.failureCount === 0 ? 'success' : 'error'
     );
 
@@ -264,9 +328,19 @@ function setLoading(on) {
 }
 
 function showResults(data) {
-  document.getElementById('statTotal').textContent   = data.total        ?? 0;
-  document.getElementById('statSuccess').textContent = data.successCount ?? 0;
-  document.getElementById('statFailed').textContent  = data.failureCount ?? 0;
+  // FIX: total / success / failed are always shown and always add up
+  // (total should equal successCount + failureCount every time now).
+  const total   = data.total ?? 0;
+  const success = data.successCount ?? 0;
+  const failed  = data.failureCount ?? 0;
+
+  document.getElementById('statTotal').textContent   = total;
+  document.getElementById('statSuccess').textContent = success;
+  document.getElementById('statFailed').textContent  = failed;
+
+  if (total !== success + failed) {
+    console.warn(`[Results] Mismatch: total=${total} but success(${success})+failed(${failed})=${success + failed}`);
+  }
 
   const failedBlock = document.getElementById('failedBlock');
   const failedList  = document.getElementById('failedList');
@@ -275,7 +349,9 @@ function showResults(data) {
   if (data.failed && data.failed.length) {
     data.failed.forEach(f => {
       const li = document.createElement('li');
-      li.textContent = `${f.email} — ${f.error}`;
+      const rowPrefix = f.row ? `[${f.row}] ` : '';
+      const namePart  = f.name ? `${f.name} — ` : '';
+      li.textContent = `${rowPrefix}${namePart}${f.email} — ${f.error}`;
       failedList.appendChild(li);
     });
     failedBlock.style.display = 'block';
@@ -294,3 +370,4 @@ function showToast(msg, type = '') {
   toast.className   = `toast ${type} show`;
   toastTimer = setTimeout(() => { toast.className = 'toast'; }, 4500);
 }
+git remote -v

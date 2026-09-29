@@ -9,6 +9,14 @@
  *   1. cp .env.example .env  → fill in your Zoho email and App Password
  *   2. npm install
  *   3. node server.js
+ *
+ * FIXES in this version:
+ *   - Every recipient row is now judged and reported individually — no row
+ *     is ever silently skipped without showing up in the results.
+ *   - Clear, specific failure reasons ("Missing email", "Invalid email
+ *     format", the raw SMTP error, etc.) instead of one generic bucket.
+ *   - Response always includes total / successCount / failureCount / failed
+ *     / succeeded, so the front-end can never "lose" the failed count.
  */
 
 'use strict';
@@ -57,7 +65,7 @@ function createTransporter() {
 ───────────────────────────────────────────── */
 
 function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email));
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim());
 }
 
 /* ─────────────────────────────────────────────
@@ -90,20 +98,42 @@ app.post('/send-mails', async (req, res) => {
     });
   }
 
+  // Every row gets a definite outcome — nothing is dropped silently.
   const results = {
     total: recipients.length,
     successCount: 0,
     failureCount: 0,
+    succeeded: [],
     failed: []
   };
 
-  for (const recipient of recipients) {
+  for (let i = 0; i < recipients.length; i++) {
+    const recipient = recipients[i] || {};
+    const rowLabel = `Row ${i + 1}`;
+    const name = (recipient.name || '').toString().trim();
+    const email = (recipient.email || '').toString().trim();
+    const subject = (recipient.subject || '').toString().trim();
+    const message = (recipient.message || '').toString();
 
-    const { name, email, subject, message } = recipient;
-
-    if (!email || !isValidEmail(email)) {
+    // 1) Missing email entirely
+    if (!email) {
       results.failureCount++;
-      results.failed.push({ email: email || '(empty)', error: 'Invalid email' });
+      results.failed.push({ row: rowLabel, name: name || '(no name)', email: '(empty)', error: 'Missing email address' });
+      continue;
+    }
+
+    // 2) Malformed email (this used to be silently filtered out on the
+    //    front-end and never reported — now it always shows up here)
+    if (!isValidEmail(email)) {
+      results.failureCount++;
+      results.failed.push({ row: rowLabel, name: name || '(no name)', email, error: 'Invalid email format' });
+      continue;
+    }
+
+    // 3) Missing message body — still attempted, but flagged if truly empty
+    if (!message.trim()) {
+      results.failureCount++;
+      results.failed.push({ row: rowLabel, name: name || '(no name)', email, error: 'Empty message body' });
       continue;
     }
 
@@ -137,15 +167,21 @@ app.post('/send-mails', async (req, res) => {
     };
 
     try {
-      await transporter.sendMail(mailOptions);
-      console.log(`✓ Sent to ${email}`);
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`✓ Sent to ${email} (${rowLabel})`);
       results.successCount++;
+      results.succeeded.push({ row: rowLabel, name: name || '(no name)', email, messageId: info && info.messageId });
     } catch (err) {
-      console.log(`✗ Failed ${email} → ${err.message}`);
+      console.log(`✗ Failed ${email} (${rowLabel}) → ${err.message}`);
       results.failureCount++;
-      results.failed.push({ email, error: err.message });
+      results.failed.push({ row: rowLabel, name: name || '(no name)', email, error: err.message });
     }
   }
+
+  // Sanity check — total must always equal success + failure.
+  console.log(
+    `[send-mails] total=${results.total} success=${results.successCount} failed=${results.failureCount}`
+  );
 
   return res.status(200).json(results);
 });
